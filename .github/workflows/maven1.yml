@@ -1,4 +1,4 @@
-name: Java CI/CD Pipeline
+name: Java CI DevSecOps Pipeline
 
 on:
   push:
@@ -14,11 +14,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout Source
+      # Step 1 - Checkout Code
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Setup Java
+      # Step 2 - Setup Java
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -26,40 +26,57 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # Pre Validation
+      # Step 3 - Validate Project
       - name: Validate Maven Project
         run: mvn validate
 
-      # Build
-      - name: Build Project
+      # Step 4 - Compile Source Code
+      - name: Compile Application
         run: mvn compile
 
-      # Test
-      - name: Run Unit Tests
+      # Step 5 - Run Unit Tests
+      - name: Execute Unit Tests
         run: mvn test
 
-      # Security Check - Dependency Scan
-      - name: Dependency Check
-        run: mvn dependency:tree
+      # Step 6 - Publish Test Reports
+      - name: Upload Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: target/surefire-reports/
 
-      # Package
+      # Step 7 - OWASP Dependency Scan
+      - name: OWASP Dependency Check
+        run: mvn org.owasp:dependency-check-maven:check
+
+      # Step 8 - Package Application
       - name: Package Application
-        run: mvn package
+        run: mvn package -DskipTests
 
-      # Upload Artifact
-      - name: Upload Jar
+      # Step 9 - Upload Build Artifact
+      - name: Upload JAR Artifact
         uses: actions/upload-artifact@v4
         with:
           name: application-jar
           path: target/*.jar
 
-      # Post Validation
-      - name: Verify Build
+      # Step 10 - Post Validation
+      - name: Post Validation Checks
         run: |
-          ls -ltr target/
+          echo "===== Java Version ====="
           java -version
-          mvn --version
 
-      # Dependency Graph Submission
+          echo "===== Maven Version ====="
+          mvn -version
+
+          echo "===== Target Directory ====="
+          ls -ltr target/
+
+          echo "===== Verify Jar Exists ====="
+          find target -name "*.jar"
+
+      # Step 11 - Dependency Graph Upload
       - name: Update Dependency Graph
         uses: advanced-security/maven-dependency-submission-action@v4
+        continue-on-error: true
