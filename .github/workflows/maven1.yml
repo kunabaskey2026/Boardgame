@@ -4,57 +4,37 @@ on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
-
-permissions:
-  contents: read
-  dependency-graph: write
 
 jobs:
   build:
-    name: Build, Test and Dependency Scan
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+
     steps:
-      # Checkout source code
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Setup Java
-      - name: Set up JDK 17
+      - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '17'
-          distribution: 'temurin'
           cache: maven
 
-      # Validate POM
-      - name: Validate Maven Project
+      - name: Validate Project
         run: mvn validate
 
-      # Run unit tests
-      - name: Run Tests
+      - name: Run Unit Tests
         run: mvn test
 
-      # Build application
-      - name: Build with Maven
+      - name: Build Package
         run: mvn clean package
 
-      # Upload test reports even if tests fail
-      - name: Upload Test Reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: surefire-reports
-          path: target/surefire-reports/
-
-      # Generate dependency tree for debugging
       - name: Generate Dependency Tree
         run: mvn dependency:tree
 
-      # Submit Dependency Graph to GitHub
       - name: Update Dependency Graph
         uses: advanced-security/maven-dependency-submission-action@v4
