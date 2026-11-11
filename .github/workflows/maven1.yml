@@ -14,11 +14,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1 - Checkout Code
+      # Checkout Source Code
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # Step 2 - Setup Java
+      # Setup Java
       - name: Setup JDK 17
         uses: actions/setup-java@v4
         with:
@@ -26,19 +26,19 @@ jobs:
           java-version: '17'
           cache: maven
 
-      # Step 3 - Validate Project
+      # Validate
       - name: Validate Maven Project
         run: mvn validate
 
-      # Step 4 - Compile Source Code
+      # Compile
       - name: Compile Application
         run: mvn compile
 
-      # Step 5 - Run Unit Tests
-      - name: Execute Unit Tests
+      # Unit Test
+      - name: Run Unit Tests
         run: mvn test
 
-      # Step 6 - Publish Test Reports
+      # Upload Test Results
       - name: Upload Test Reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -46,37 +46,45 @@ jobs:
           name: test-reports
           path: target/surefire-reports/
 
-      # Step 7 - OWASP Dependency Scan
+      # OWASP Dependency Scan
+      # Add GitHub Secret: NVD_API_KEY
       - name: OWASP Dependency Check
-        run: mvn org.owasp:dependency-check-maven:check
+        continue-on-error: true
+        run: |
+          mvn org.owasp:dependency-check-maven:check \
+          -DnvdApiKey=${{ secrets.NVD_API_KEY }}
 
-      # Step 8 - Package Application
+      # Package Application
       - name: Package Application
         run: mvn package -DskipTests
 
-      # Step 9 - Upload Build Artifact
-      - name: Upload JAR Artifact
+      # Upload JAR Artifact
+      - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: application-jar
           path: target/*.jar
 
-      # Step 10 - Post Validation
-      - name: Post Validation Checks
+      # Post Validation Checks
+      - name: Post Validation
         run: |
-          echo "===== Java Version ====="
+          echo "===== JAVA VERSION ====="
           java -version
 
-          echo "===== Maven Version ====="
+          echo "===== MAVEN VERSION ====="
           mvn -version
 
-          echo "===== Target Directory ====="
+          echo "===== TARGET DIRECTORY ====="
           ls -ltr target/
 
-          echo "===== Verify Jar Exists ====="
+          echo "===== JAR FILES ====="
           find target -name "*.jar"
 
-      # Step 11 - Dependency Graph Upload
+      # Maven Dependency Tree
+      - name: Generate Dependency Tree
+        run: mvn dependency:tree
+
+      # Dependency Graph Upload
       - name: Update Dependency Graph
-        uses: advanced-security/maven-dependency-submission-action@v4
         continue-on-error: true
+        uses: advanced-security/maven-dependency-submission-action@v4
