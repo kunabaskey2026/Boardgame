@@ -1,24 +1,26 @@
 pipeline {
-    agent any
-    
+    agent { label 'agent-1'}
     tools {
+        maven 'maven3.6'
         jdk 'jdk17'
-        maven 'maven3'
     }
-    
-    stages {   
-        stage('Compile') {
+
+    stages {
+        stage('Git Checkout') {
             steps {
-            sh 'mvn compile'
+                git branch: 'main', url: 'https://github.com/kunabaskey2026/Boardgame.git'
             }
         }
-        
+        stage('compile') {
+            steps {
+                sh 'mvn compile'
+            }
+        }
         stage('Test') {
             steps {
                 sh 'mvn test'
             }
         }
-        
         stage('Build') {
             steps {
                 sh 'mvn package'
